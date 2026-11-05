@@ -10,7 +10,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/composer": "0.34.0",
+    "@prisma/composer-prisma-cloud": "0.34.0",
+    "@prisma/orm-postgres": "8.0.0-rc.20",
     "@supabase/supabase-js": "^2.119.0",
+    "effect": "4.0.3",
     "next": "16.4.4",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -23,7 +27,19 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.4",
     "playwright": "^1.64.1",
+    "prisma": "8.0.0-rc.27",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@effect/platform-bun": "4.0.3",
+    "@effect/platform-node": "4.0.3",
+    "@effect/platform-node-shared": "4.0.3",
+    "@effect/sql-d1": "4.0.3",
+    "@effect/sql-mysql2": "4.0.3",
+    "@effect/sql-pg": "4.0.3",
+    "@effect/sql-sqlite-do": "4.0.3",
+    "@effect/vitest": "4.0.3",
+    "effect": "4.0.3"
   }
 }

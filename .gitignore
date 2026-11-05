@@ -43,3 +43,5 @@ next-env.d.ts
 # local verification artifacts
 server.log
 ui-shots/
+.prisma-composer/
+.alchemy/
