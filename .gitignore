@@ -43,3 +43,7 @@ next-env.d.ts
 # local verification artifacts
 server.log
 ui-shots/
+
+# verification logs
+verify-server.log
+*.log
