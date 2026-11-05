@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const KEYS = ["er_contacts", "er_family", "er_sos_history"];
 
@@ -8,6 +10,7 @@ export default function SettingsPage() {
   const [counts, setCounts] = useState({ contacts: 0, family: 0, history: 0 });
   const [cleared, setCleared] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [account, setAccount] = useState<string | null>(null);
 
   const refresh = () => {
     const read = (k: string) => {
@@ -19,6 +22,8 @@ export default function SettingsPage() {
   useEffect(() => {
     refresh();
     setInstalled(window.matchMedia("(display-mode: standalone)").matches);
+    const sb = getSupabase();
+    if (sb) sb.auth.getUser().then(({ data }) => setAccount(data.user?.email ?? null));
   }, []);
 
   const clearAll = () => {
@@ -34,6 +39,20 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-black">Settings &amp; Privacy</h1>
         <p className="mt-1 text-sm text-neutral-400">All data is stored locally on this device. Nothing leaves your browser.</p>
       </div>
+
+      <section className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
+        <h2 className="text-lg font-bold">Account &amp; storage</h2>
+        <p className="mt-1 text-sm text-neutral-400">
+          {!isSupabaseConfigured()
+            ? "Supabase is not configured — data is stored locally on this device."
+            : account
+              ? `Signed in as ${account}. Contacts, family check-ins, incidents and SOS events sync to the cloud database.`
+              : "Not signed in — data is stored locally on this device. Sign in to sync across devices."}
+        </p>
+        <Link href="/login" className="mt-3 inline-block rounded-lg border border-sky-700 bg-sky-950 px-4 py-2 text-sm font-bold text-sky-300 hover:bg-sky-900">
+          {account ? "Manage account" : "Sign in / create account"}
+        </Link>
+      </section>
 
       <section className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
         <h2 className="text-lg font-bold">Location sharing</h2>

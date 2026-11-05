@@ -8,6 +8,7 @@ const links = [
   { href: "/contacts", label: "Contacts" },
   { href: "/family", label: "Family" },
   { href: "/dashboard", label: "Responder" },
+  { href: "/login", label: "Account" },
   { href: "/settings", label: "Settings" },
 ];
 

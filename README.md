@@ -28,8 +28,9 @@ Open http://localhost:3000.
 | `/first-aid/[id]` | Step-by-step guide |
 | `/incidents` | Report an incident + nearby incident feed |
 | `/dashboard` | Responder triage queue + workplace roll-call |
-| `/contacts` | Trusted emergency contacts (localStorage) |
-| `/family` | Household check-in (localStorage) |
+| `/contacts` | Trusted emergency contacts (cloud or localStorage) |
+| `/family` | Household check-in (cloud or localStorage) |
+| `/login` | Sign in / create account |
 | `/settings` | Privacy, stored data, offline/install info |
 | `/offline` | Offline fallback page |
 
@@ -40,19 +41,34 @@ only. Use **Settings → Delete all local data** to wipe them.
 
 ## Backend (Supabase)
 
-The app works as a frontend demo without a backend. To enable real persistence and
-multi-device alerting:
+The app works as a frontend demo without a backend — it falls back to `localStorage`
+and demo data. To enable the full backend:
 
 1. Create a Supabase project.
-2. Apply `supabase/schema.sql` (SQL editor or `supabase db push`).
+2. Apply `supabase/schema.sql` in the SQL editor (idempotent; safe to re-run). It creates
+   profiles (with an auto-create trigger), emergency contacts, family check-ins, SOS
+   events, incidents, organizations/memberships, RLS policies, and an
+   `incidents_near(lat, lng, radius_m)` function.
 3. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-4. `src/lib/supabase.ts` exposes a ready client; the schema includes RLS policies for
-   profiles, contacts, organizations, SOS events (with PostGIS geolocation), and
-   incidents plus an `incidents_near(lat, lng, radius_m)` helper.
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project settings → API).
+4. Restart the server. Pages show a "Synced to cloud" badge when the database is live.
 
-Still required for production alerting: push (FCM/APNs), SMS/voice fallback (Twilio),
-and an edge function to fan out SOS events to emergency contacts.
+### Auth
+
+Email/password auth is wired through `@supabase/ssr`:
+
+- `src/lib/supabase.ts` — browser client
+- `src/lib/supabase-server.ts` — cookie-bound server client
+- `src/proxy.ts` — Next.js 16 Proxy (middleware) that refreshes sessions
+- `/login` — sign in / sign up, `/auth/callback` — email-confirmation exchange
+
+Signed-in users get their contacts, family check-ins, incidents, and SOS events stored
+in Postgres. Anonymous users keep local-only storage.
+
+### Still required for production alerting
+
+Push (FCM/APNs), SMS/voice fallback (Twilio), and an Edge Function to fan out SOS events
+to emergency contacts.
 
 ## Testing
 

@@ -16,6 +16,7 @@ const routes = [
   "/contacts",
   "/family",
   "/settings",
+  "/login",
   "/offline",
   "/manifest.webmanifest",
   "/icon.svg",

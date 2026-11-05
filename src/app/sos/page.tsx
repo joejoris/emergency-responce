@@ -2,17 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadContacts, type EmergencyContact } from "@/lib/contacts";
+import { logSosEvent, resolveSosEvent, type SosEvent } from "@/lib/db";
 import NearbyHelp from "@/components/NearbyHelp";
 
 type SosState = "idle" | "arming" | "active";
-type SosEvent = { id: string; time: string; lat: number | null; lng: number | null };
 
-const HISTORY_KEY = "er_sos_history";
-
-function loadHistory(): SosEvent[] {
+function loadLocalHistory(): SosEvent[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(window.localStorage.getItem(HISTORY_KEY) ?? "[]") as SosEvent[];
+    return JSON.parse(window.localStorage.getItem("er_sos_history") ?? "[]") as SosEvent[];
   } catch {
     return [];
   }
@@ -47,12 +45,13 @@ export default function SosPage() {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [history, setHistory] = useState<SosEvent[]>([]);
+  const activeEventId = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopSiren = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setContacts(loadContacts());
-    setHistory(loadHistory());
+    setHistory(loadLocalHistory());
   }, []);
 
   useEffect(() => {
@@ -97,26 +96,15 @@ export default function SosPage() {
     };
   }, [state]);
 
-  const logSosEvent = (loc: { lat: number; lng: number } | null) => {
-    const evt: SosEvent = {
-      id: crypto.randomUUID(),
-      time: new Date().toISOString(),
-      lat: loc?.lat ?? null,
-      lng: loc?.lng ?? null,
-    };
-    setHistory((h) => {
-      const next = [evt, ...h].slice(0, 20);
-      window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-
   // Log once when transitioning into "active"
   const loggedRef = useRef(false);
   useEffect(() => {
     if (state === "active" && !loggedRef.current) {
       loggedRef.current = true;
-      logSosEvent(location);
+      void logSosEvent({ lat: location?.lat ?? null, lng: location?.lng ?? null, accuracy: location?.accuracy ?? null }).then(({ items }) => {
+        activeEventId.current = items[0]?.id ?? null;
+        setHistory(items);
+      });
     }
     if (state === "idle") loggedRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +114,8 @@ export default function SosPage() {
     if (timer.current) clearInterval(timer.current);
     stopSiren.current?.();
     stopSiren.current = null;
+    if (activeEventId.current) void resolveSosEvent(activeEventId.current);
+    activeEventId.current = null;
     setState("idle");
     setLocation(null);
   };

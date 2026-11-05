@@ -1,47 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type Member = { id: string; name: string; status: "unknown" | "safe" | "help" };
-
-const KEY = "er_family";
-
-function load(): Member[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(window.localStorage.getItem(KEY) ?? "[]") as Member[];
-  } catch {
-    return [];
-  }
-}
+import {
+  addFamilyMember,
+  listFamily,
+  removeFamilyMember,
+  resetFamily,
+  setFamilyStatus,
+  type FamilyMember,
+  type Storage,
+} from "@/lib/db";
 
 export default function FamilyPage() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [storage, setStorage] = useState<Storage>("local");
   const [name, setName] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setMembers(load());
-    setLoaded(true);
+    listFamily().then(({ items, storage }) => {
+      setMembers(items);
+      setStorage(storage);
+      setLoaded(true);
+    });
   }, []);
 
-  const update = (next: Member[]) => {
-    setMembers(next);
-    window.localStorage.setItem(KEY, JSON.stringify(next));
-  };
-
-  const add = (e: React.FormEvent) => {
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    update([...members, { id: crypto.randomUUID(), name: name.trim(), status: "unknown" }]);
+    const res = await addFamilyMember(name.trim());
+    setMembers(res.items);
+    setStorage(res.storage);
     setName("");
   };
 
-  const setStatus = (id: string, status: Member["status"]) =>
-    update(members.map((m) => (m.id === id ? { ...m, status } : m)));
+  const setStatus = async (id: string, status: FamilyMember["status"]) => {
+    const res = await setFamilyStatus(id, status);
+    setMembers(res.items);
+    setStorage(res.storage);
+  };
 
-  const reset = () => update(members.map((m) => ({ ...m, status: "unknown" })));
-  const remove = (id: string) => update(members.filter((m) => m.id !== id));
+  const reset = async () => {
+    const res = await resetFamily();
+    setMembers(res.items);
+    setStorage(res.storage);
+  };
+
+  const remove = async (id: string) => {
+    const res = await removeFamilyMember(id);
+    setMembers(res.items);
+    setStorage(res.storage);
+  };
 
   const safe = members.filter((m) => m.status === "safe").length;
   const help = members.filter((m) => m.status === "help").length;
@@ -51,7 +60,7 @@ export default function FamilyPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-black">Family Check-In</h1>
-          <p className="mt-1 text-sm text-neutral-400">During an emergency, mark each household member safe or needing help. Stored on this device.</p>
+          <p className="mt-1 text-sm text-neutral-400">During an emergency, mark each household member safe or needing help.</p>
         </div>
         {members.length > 0 && (
           <button onClick={reset} className="shrink-0 rounded-lg border border-neutral-700 px-3 py-2 text-xs font-semibold text-neutral-300 hover:bg-neutral-800">
@@ -59,6 +68,9 @@ export default function FamilyPage() {
           </button>
         )}
       </div>
+      <p className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${storage === "cloud" ? "bg-emerald-900 text-emerald-300" : "bg-neutral-800 text-neutral-400"}`}>
+        {storage === "cloud" ? "Synced to cloud" : "Saved on this device"}
+      </p>
 
       {members.length > 0 && (
         <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm">

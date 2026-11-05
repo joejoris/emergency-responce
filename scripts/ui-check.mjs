@@ -9,7 +9,7 @@ const widths = [
   { name: "tablet", width: 768, height: 1024 },
   { name: "desktop", width: 1280, height: 900 },
 ];
-const pages = ["/", "/sos", "/first-aid", "/incidents", "/contacts", "/family", "/dashboard", "/settings", "/offline"];
+const pages = ["/", "/sos", "/first-aid", "/incidents", "/contacts", "/family", "/dashboard", "/settings", "/login", "/offline"];
 
 const results = [];
 const pass = (m) => { results.push(`PASS  ${m}`); };
